@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <rect width="512" height="512" rx="80" fill="#1a237e"/>
+  <!-- Center body -->
+  <circle cx="256" cy="256" r="36" fill="#fff"/>
+  <circle cx="256" cy="256" r="18" fill="#1a237e"/>
+  <!-- Arms -->
+  <line x1="256" y1="256" x2="138" y2="138" stroke="#fff" stroke-width="12" stroke-linecap="round"/>
+  <line x1="256" y1="256" x2="374" y2="138" stroke="#fff" stroke-width="12" stroke-linecap="round"/>
+  <line x1="256" y1="256" x2="138" y2="374" stroke="#fff" stroke-width="12" stroke-linecap="round"/>
+  <line x1="256" y1="256" x2="374" y2="374" stroke="#fff" stroke-width="12" stroke-linecap="round"/>
+  <!-- Motor mounts -->
+  <circle cx="138" cy="138" r="16" fill="#fff"/>
+  <circle cx="374" cy="138" r="16" fill="#fff"/>
+  <circle cx="138" cy="374" r="16" fill="#fff"/>
+  <circle cx="374" cy="374" r="16" fill="#fff"/>
+  <!-- Propellers -->
+  <ellipse cx="138" cy="138" rx="58" ry="16" fill="#fff" opacity="0.5" transform="rotate(-25 138 138)"/>
+  <ellipse cx="138" cy="138" rx="58" ry="16" fill="#fff" opacity="0.5" transform="rotate(65 138 138)"/>
+  <ellipse cx="374" cy="138" rx="58" ry="16" fill="#fff" opacity="0.5" transform="rotate(25 374 138)"/>
+  <ellipse cx="374" cy="138" rx="58" ry="16" fill="#fff" opacity="0.5" transform="rotate(115 374 138)"/>
+  <ellipse cx="138" cy="374" rx="58" ry="16" fill="#fff" opacity="0.5" transform="rotate(25 138 374)"/>
+  <ellipse cx="138" cy="374" rx="58" ry="16" fill="#fff" opacity="0.5" transform="rotate(115 138 374)"/>
+  <ellipse cx="374" cy="374" rx="58" ry="16" fill="#fff" opacity="0.5" transform="rotate(-25 374 374)"/>
+  <ellipse cx="374" cy="374" rx="58" ry="16" fill="#fff" opacity="0.5" transform="rotate(65 374 374)"/>
+  <!-- Camera -->
+  <rect x="237" y="278" width="38" height="22" rx="5" fill="#fff" opacity="0.7"/>
+</svg>

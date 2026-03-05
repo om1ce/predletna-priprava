@@ -1,0 +1,1699 @@
+<!DOCTYPE html>
+<html lang="sl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#1a237e">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="apple-touch-icon" href="icons/icon-192.png">
+    <meta name="description" content="Informativni pregled predpisov za let z dronom v Sloveniji">
+    <title>Predletna priprava — Informativni pregled za drone pilote</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            overflow: hidden;
+            color: #222;
+        }
+
+        /* ---- FULL-WIDTH HEADER ---- */
+        #top-header {
+            background: linear-gradient(135deg, #1a237e, #283593);
+            color: #fff;
+            padding: 14px 28px;
+            text-align: center;
+            flex-shrink: 0;
+            z-index: 1000;
+        }
+        #top-header h1 {
+            font-size: 1.5rem;
+            font-weight: 800;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+        }
+        #top-header p {
+            font-size: 0.82rem;
+            opacity: 0.8;
+        }
+
+        /* ---- MAIN CONTENT ---- */
+        #main-content {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        /* ---- SIDEBAR ---- */
+        #sidebar {
+            width: 400px;
+            min-width: 400px;
+            height: 100%;
+            overflow-y: auto;
+            background: #f5f6fa;
+            border-right: 2px solid #ddd;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .section {
+            padding: 16px 18px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        .section-title {
+            font-size: 0.78rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #5c6bc0;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .section-title .num {
+            background: #5c6bc0;
+            color: #fff;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.7rem;
+        }
+
+        /* Search input */
+        .search-wrap {
+            position: relative;
+        }
+        .search-wrap input {
+            width: 100%;
+            padding: 10px 12px;
+            border: 2px solid #ccc;
+            border-radius: 8px;
+            font-size: 0.92rem;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        .search-wrap input:focus {
+            border-color: #5c6bc0;
+        }
+
+        /* Dropdown */
+        #drone-dropdown {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: #fff;
+            border: 1px solid #ccc;
+            border-top: none;
+            border-radius: 0 0 8px 8px;
+            max-height: 240px;
+            overflow-y: auto;
+            z-index: 1000;
+            display: none;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+        #drone-dropdown .dd-item {
+            padding: 10px 14px;
+            cursor: pointer;
+            font-size: 0.88rem;
+            border-bottom: 1px solid #f0f0f0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        #drone-dropdown .dd-item:hover,
+        #drone-dropdown .dd-item.active {
+            background: #e8eaf6;
+        }
+        #drone-dropdown .dd-item .dd-weight {
+            font-size: 0.78rem;
+            color: #888;
+        }
+        #drone-dropdown .dd-manual {
+            padding: 10px 14px;
+            cursor: pointer;
+            font-size: 0.88rem;
+            color: #5c6bc0;
+            font-weight: 600;
+            border-top: 2px solid #e8eaf6;
+        }
+        #drone-dropdown .dd-manual:hover {
+            background: #e8eaf6;
+        }
+
+        /* Drone card */
+        .drone-card {
+            background: #fff;
+            border-radius: 10px;
+            padding: 14px;
+            margin-top: 10px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            display: none;
+        }
+        .drone-card.visible { display: block; }
+        .drone-card h3 {
+            font-size: 1rem;
+            margin-bottom: 8px;
+            color: #1a237e;
+        }
+        .drone-card .specs {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 6px 16px;
+            font-size: 0.82rem;
+        }
+        .drone-card .specs .spec-label {
+            color: #777;
+        }
+        .drone-card .specs .spec-value {
+            font-weight: 600;
+        }
+        .drone-card .class-badge {
+            display: inline-block;
+            padding: 3px 10px;
+            border-radius: 12px;
+            font-size: 0.78rem;
+            font-weight: 700;
+            color: #fff;
+            margin-top: 4px;
+        }
+        .class-badge.c0 { background: #43a047; }
+        .class-badge.c1 { background: #7cb342; }
+        .class-badge.c2 { background: #ffa726; }
+        .class-badge.c3 { background: #ef6c00; }
+        .class-badge.c4 { background: #d84315; }
+        .class-badge.legacy { background: #78909c; }
+
+        /* Manual entry */
+        #manual-entry {
+            margin-top: 10px;
+            background: #fff;
+            border-radius: 10px;
+            padding: 14px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            display: none;
+        }
+        #manual-entry.visible { display: block; }
+        #manual-entry h4 {
+            font-size: 0.9rem;
+            margin-bottom: 10px;
+            color: #1a237e;
+        }
+        #manual-entry label {
+            font-size: 0.82rem;
+            color: #555;
+            display: block;
+            margin-top: 8px;
+            margin-bottom: 3px;
+        }
+        #manual-entry input[type="number"] {
+            width: 100%;
+            padding: 8px 10px;
+            border: 2px solid #ccc;
+            border-radius: 6px;
+            font-size: 0.88rem;
+            outline: none;
+        }
+        #manual-entry input[type="number"]:focus {
+            border-color: #5c6bc0;
+        }
+        .checkbox-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 8px;
+            font-size: 0.85rem;
+        }
+        .checkbox-row input[type="checkbox"] {
+            width: 16px;
+            height: 16px;
+        }
+        .btn {
+            padding: 8px 18px;
+            border: none;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
+            margin-top: 10px;
+        }
+        .btn-primary {
+            background: #5c6bc0;
+            color: #fff;
+        }
+        .btn-primary:hover { background: #3f51b5; }
+        .btn-sm {
+            padding: 5px 12px;
+            font-size: 0.8rem;
+        }
+        .btn-outline {
+            background: transparent;
+            border: 2px solid #5c6bc0;
+            color: #5c6bc0;
+        }
+        .btn-outline:hover {
+            background: #e8eaf6;
+        }
+
+        /* Location section */
+        .location-status {
+            background: #fff;
+            border-radius: 10px;
+            padding: 12px 14px;
+            margin-top: 10px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            font-size: 0.85rem;
+            display: none;
+        }
+        .location-status.visible { display: block; }
+        .location-status .loc-name {
+            font-weight: 600;
+            color: #1a237e;
+        }
+        .location-status .loc-coords {
+            color: #888;
+            font-size: 0.78rem;
+            margin-top: 2px;
+        }
+
+        .addr-search {
+            display: flex;
+            gap: 6px;
+            margin-top: 8px;
+        }
+        .addr-search input {
+            flex: 1;
+            padding: 8px 10px;
+            border: 2px solid #ccc;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            outline: none;
+        }
+        .addr-search input:focus { border-color: #5c6bc0; }
+
+        .coord-inputs {
+            display: flex;
+            gap: 6px;
+            margin-top: 8px;
+            align-items: flex-end;
+        }
+        .coord-inputs .coord-field {
+            flex: 1;
+        }
+        .coord-inputs label {
+            font-size: 0.75rem;
+            color: #777;
+            display: block;
+            margin-bottom: 2px;
+        }
+        .coord-inputs input {
+            width: 100%;
+            padding: 7px 8px;
+            border: 2px solid #ccc;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            outline: none;
+        }
+        .coord-inputs input:focus { border-color: #5c6bc0; }
+
+        .or-divider {
+            text-align: center;
+            font-size: 0.75rem;
+            color: #aaa;
+            margin: 8px 0;
+            position: relative;
+        }
+        .or-divider::before,
+        .or-divider::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            width: 38%;
+            height: 1px;
+            background: #ddd;
+        }
+        .or-divider::before { left: 0; }
+        .or-divider::after { right: 0; }
+
+        /* Results section */
+        #results-section {
+            display: none;
+        }
+        #results-section.visible { display: block; }
+
+        .result-card {
+            background: #fff;
+            border-radius: 10px;
+            padding: 14px;
+            margin-top: 10px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            border-left: 4px solid #ccc;
+        }
+        .result-card.cert { border-left-color: #1565c0; }
+        .result-card.ops { border-left-color: #546e7a; }
+        .result-card.zone-danger { border-left-color: #c62828; background: #ffebee; }
+        .result-card.zone-warning { border-left-color: #e65100; background: #fff3e0; }
+        .result-card.zone-caution { border-left-color: #f9a825; background: #fffde7; }
+        .result-card.zone-info { border-left-color: #2e7d32; background: #e8f5e9; }
+        .result-card.zone-ok { border-left-color: #43a047; background: #e8f5e9; }
+
+        .result-card h4 {
+            font-size: 0.9rem;
+            margin-bottom: 6px;
+        }
+        .result-card p, .result-card li {
+            font-size: 0.82rem;
+            line-height: 1.5;
+            color: #444;
+        }
+        .result-card ul {
+            padding-left: 18px;
+            margin-top: 4px;
+        }
+        .result-card .tag {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 0.72rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            color: #fff;
+            margin-right: 6px;
+        }
+        .tag-red { background: #c62828; }
+        .tag-orange { background: #e65100; }
+        .tag-yellow { background: #f9a825; color: #333; }
+        .tag-green { background: #2e7d32; }
+        .tag-blue { background: #1565c0; }
+
+        /* Loading spinner */
+        .loading {
+            display: none;
+            align-items: center;
+            gap: 8px;
+            padding: 12px;
+            font-size: 0.85rem;
+            color: #5c6bc0;
+        }
+        .loading.visible { display: flex; }
+        .spinner {
+            width: 18px;
+            height: 18px;
+            border: 3px solid #e8eaf6;
+            border-top-color: #5c6bc0;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* Disclaimer */
+        .disclaimer {
+            padding: 14px 18px;
+            background: #fff3e0;
+            font-size: 0.75rem;
+            color: #6d4c00;
+            line-height: 1.5;
+            border-top: 1px solid #e0e0e0;
+        }
+        .disclaimer a {
+            color: #e65100;
+        }
+
+        /* ---- MAP ---- */
+        #map {
+            flex: 1;
+            height: 100%;
+        }
+
+        /* ---- NORTH INDICATOR ---- */
+        .north-indicator {
+            background: #fff;
+            border-radius: 50%;
+            width: 44px;
+            height: 44px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+            font-size: 1.1rem;
+            font-weight: 800;
+            color: #c62828;
+            line-height: 1;
+            flex-direction: column;
+        }
+        .north-indicator .north-arrow {
+            font-size: 0.7rem;
+            color: #c62828;
+            margin-bottom: -2px;
+        }
+        .north-indicator .north-letter {
+            font-size: 1rem;
+            font-weight: 800;
+            color: #333;
+        }
+
+        /* Notification */
+        .notification {
+            position: fixed;
+            top: 16px;
+            right: 16px;
+            background: #323232;
+            color: #fff;
+            padding: 12px 20px;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            z-index: 2000;
+            opacity: 0;
+            transform: translateY(-10px);
+            transition: opacity 0.3s, transform 0.3s;
+            max-width: 360px;
+        }
+        .notification.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        .notification.error { background: #c62828; }
+
+        /* Scroll styling */
+        #sidebar::-webkit-scrollbar { width: 6px; }
+        #sidebar::-webkit-scrollbar-track { background: transparent; }
+        #sidebar::-webkit-scrollbar-thumb { background: #bbb; border-radius: 3px; }
+
+        /* Address result dropdown */
+        #addr-results {
+            background: #fff;
+            border: 1px solid #ccc;
+            border-radius: 0 0 8px 8px;
+            max-height: 180px;
+            overflow-y: auto;
+            display: none;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+        }
+        #addr-results.visible { display: block; }
+        #addr-results .addr-item {
+            padding: 8px 12px;
+            font-size: 0.82rem;
+            cursor: pointer;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        #addr-results .addr-item:hover { background: #e8eaf6; }
+
+        /* Zone popup on map */
+        .zone-popup { font-size: 0.82rem; line-height: 1.5; max-width: 260px; }
+        .zone-popup .zp-title { font-weight: 700; margin-bottom: 4px; }
+        .zone-popup .zp-severity {
+            display: inline-block;
+            padding: 1px 7px;
+            border-radius: 3px;
+            font-size: 0.7rem;
+            font-weight: 700;
+            color: #fff;
+            margin-bottom: 4px;
+        }
+        .zone-popup .zp-severity.sev-red { background: #c62828; }
+        .zone-popup .zp-severity.sev-orange { background: #e65100; }
+        .zone-popup .zp-severity.sev-yellow { background: #f9a825; color: #333; }
+        .zone-popup .zp-contact { margin-top: 6px; padding-top: 6px; border-top: 1px solid #ddd; font-size: 0.78rem; color: #444; }
+        .zone-popup .zp-contact a { color: #1565c0; }
+
+        /* ---- SIDEBAR TOGGLE (mobile only) ---- */
+        #sidebar-toggle {
+            display: none;
+            position: fixed;
+            bottom: 18px;
+            left: 18px;
+            z-index: 1500;
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            border: none;
+            background: #1a237e;
+            color: #fff;
+            font-size: 1.5rem;
+            line-height: 1;
+            cursor: pointer;
+            box-shadow: 0 3px 12px rgba(0,0,0,0.35);
+            transition: transform 0.2s;
+        }
+        #sidebar-toggle:active { transform: scale(0.92); }
+
+        /* ---- RESPONSIVE: TABLET & PHONE ---- */
+        @media (max-width: 768px) {
+            #main-content {
+                flex-direction: column;
+            }
+            #sidebar {
+                width: 100%;
+                min-width: 0;
+                max-height: 55vh;
+                height: auto;
+                border-right: none;
+                border-bottom: 2px solid #ddd;
+                transition: max-height 0.35s ease, opacity 0.25s ease;
+                overflow-y: auto;
+            }
+            #sidebar.collapsed {
+                max-height: 0;
+                overflow: hidden;
+                border-bottom: none;
+                opacity: 0;
+                pointer-events: none;
+            }
+            #map {
+                min-height: 45vh;
+                flex: 1;
+            }
+            #top-header {
+                padding: 10px 16px;
+            }
+            #top-header h1 {
+                font-size: 1.15rem;
+                letter-spacing: 2px;
+            }
+            #top-header p {
+                font-size: 0.72rem;
+            }
+            #sidebar-toggle {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+        }
+
+        /* ---- RESPONSIVE: SMALL PHONE ---- */
+        @media (max-width: 400px) {
+            #top-header h1 {
+                font-size: 0.95rem;
+                letter-spacing: 1px;
+            }
+            #top-header p {
+                font-size: 0.65rem;
+            }
+            .drone-card .specs {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* ---- PWA STANDALONE MODE ---- */
+        @media (display-mode: standalone) {
+            body {
+                padding-top: env(safe-area-inset-top);
+                padding-bottom: env(safe-area-inset-bottom);
+                padding-left: env(safe-area-inset-left);
+                padding-right: env(safe-area-inset-right);
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div id="top-header">
+    <div>
+        <h1>PREDLETNA PRIPRAVA</h1>
+        <p>Informativni pregled predpisov in omejitev za let z dronom v Sloveniji</p>
+    </div>
+</div>
+
+<div id="main-content">
+
+<div id="sidebar">
+
+    <!-- 1. DRONE SELECTION -->
+    <div class="section">
+        <div class="section-title"><span class="num">1</span> Izbira drona</div>
+        <div class="search-wrap">
+            <input type="text" id="drone-search" placeholder="Vpiši model drona (npr. DJI Mini 4 Pro)" autocomplete="off" />
+            <div id="drone-dropdown"></div>
+        </div>
+        <div class="drone-card" id="drone-card"></div>
+        <div id="manual-entry">
+            <h4>Ročni vnos drona</h4>
+            <label for="manual-weight">Vzletna teža (g)</label>
+            <input type="number" id="manual-weight" min="1" max="25000" placeholder="npr. 249" />
+            <div class="checkbox-row">
+                <input type="checkbox" id="manual-class" />
+                <label for="manual-class" style="margin:0">Dron ima EU razredno oznako (C0–C4)</label>
+            </div>
+            <div id="manual-class-select" style="display:none; margin-top:6px;">
+                <label style="font-size:0.8rem; color:#555;">Razred:</label>
+                <select id="manual-class-value" style="padding:6px 8px; border:2px solid #ccc; border-radius:6px; font-size:0.85rem; width:100%;">
+                    <option value="C0">C0 (< 250 g)</option>
+                    <option value="C1">C1 (< 900 g)</option>
+                    <option value="C2">C2 (< 4 kg)</option>
+                    <option value="C3">C3 (< 25 kg)</option>
+                    <option value="C4">C4 (< 25 kg)</option>
+                </select>
+            </div>
+            <div class="checkbox-row">
+                <input type="checkbox" id="manual-camera" checked />
+                <label for="manual-camera" style="margin:0">Ima kamero</label>
+            </div>
+            <button class="btn btn-primary" id="manual-confirm">Potrdi</button>
+        </div>
+    </div>
+
+    <!-- 2. LOCATION SELECTION -->
+    <div class="section">
+        <div class="section-title"><span class="num">2</span> Izbira lokacije</div>
+        <p style="font-size:0.82rem; color:#777; margin-bottom:6px;">Klikni na zemljevid ali poišči naslov</p>
+
+        <div class="addr-search">
+            <input type="text" id="addr-input" placeholder="Poišči naslov v Sloveniji..." />
+            <button class="btn btn-primary btn-sm" id="addr-btn">Iskanje</button>
+        </div>
+        <div id="addr-results"></div>
+
+        <div class="or-divider">ali vnesi koordinate</div>
+
+        <div class="coord-inputs">
+            <div class="coord-field">
+                <label>Lat (N)</label>
+                <input type="number" id="coord-lat" step="0.0001" min="45.4" max="46.9" placeholder="46.0500" />
+            </div>
+            <div class="coord-field">
+                <label>Lng (E)</label>
+                <input type="number" id="coord-lng" step="0.0001" min="13.3" max="16.6" placeholder="14.5000" />
+            </div>
+            <button class="btn btn-primary btn-sm" id="coord-btn" style="margin-top:0; align-self:flex-end;">OK</button>
+        </div>
+
+        <div class="location-status" id="loc-status">
+            <div class="loc-name" id="loc-name"></div>
+            <div class="loc-coords" id="loc-coords"></div>
+        </div>
+    </div>
+
+    <!-- 3. RESULTS -->
+    <div class="section" id="results-section">
+        <div class="section-title"><span class="num">3</span> Rezultati</div>
+
+        <div class="loading" id="loading-zones">
+            <div class="spinner"></div>
+            <span>Preverjam geografske cone...</span>
+        </div>
+
+        <div id="results-container"></div>
+    </div>
+
+    <!-- DISCLAIMER -->
+    <div class="disclaimer">
+        <strong>Opozorilo:</strong> Ta aplikacija je <strong>informativne narave</strong> in ne nadomešča uradnih virov.
+        Pred vsakim letom preverite veljavne <strong>NOTAM-e</strong> in uradni
+        <a href="https://www.caa.si/droni" target="_blank">CAA zemljevid</a>.
+        Predpisi se lahko spremenijo — vedno preverite zadnjo verzijo na
+        <a href="https://www.caa.si" target="_blank">caa.si</a>.
+    </div>
+</div>
+
+<div id="map"></div>
+
+</div><!-- /main-content -->
+
+<button id="sidebar-toggle" aria-label="Odpri/zapri meni">☰</button>
+<div class="notification" id="notification"></div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+(function() {
+    'use strict';
+
+    // ===========================
+    // DRONE DATABASE
+    // ===========================
+    const DRONES = [
+        { name: 'DJI Mini 4 Pro',        weight: 249, classLabel: 'C0', hasClassLabel: true,  hasCamera: true,  maxSpeed: 57 },
+        { name: 'DJI Mini 3 Pro',        weight: 249, classLabel: 'C0', hasClassLabel: true,  hasCamera: true,  maxSpeed: 57 },
+        { name: 'DJI Mini 3',            weight: 248, classLabel: 'C0', hasClassLabel: true,  hasCamera: true,  maxSpeed: 57 },
+        { name: 'DJI Mini 2 SE',         weight: 246, classLabel: null, hasClassLabel: false, hasCamera: true,  maxSpeed: 57 },
+        { name: 'DJI Mini 2',            weight: 249, classLabel: null, hasClassLabel: false, hasCamera: true,  maxSpeed: 57 },
+        { name: 'DJI Air 3',             weight: 720, classLabel: 'C1', hasClassLabel: true,  hasCamera: true,  maxSpeed: 75 },
+        { name: 'DJI Air 2S',            weight: 595, classLabel: null, hasClassLabel: false, hasCamera: true,  maxSpeed: 68 },
+        { name: 'DJI Mavic 3 Pro',       weight: 958, classLabel: 'C2', hasClassLabel: true,  hasCamera: true,  maxSpeed: 75 },
+        { name: 'DJI Mavic 3 Classic',   weight: 895, classLabel: 'C1', hasClassLabel: true,  hasCamera: true,  maxSpeed: 75 },
+        { name: 'DJI Mavic 3 Enterprise',weight: 915, classLabel: 'C2', hasClassLabel: true,  hasCamera: true,  maxSpeed: 75 },
+        { name: 'DJI Matrice 4T',        weight: 1487,classLabel: 'C2', hasClassLabel: true,  hasCamera: true,  maxSpeed: 59 },
+        { name: 'DJI Matrice 4E',        weight: 1371,classLabel: 'C2', hasClassLabel: true,  hasCamera: true,  maxSpeed: 59 },
+        { name: 'DJI Matrice 350 RTK',   weight: 6470,classLabel: null, hasClassLabel: false, hasCamera: true,  maxSpeed: 79 },
+        { name: 'DJI Matrice 30T',       weight: 3770,classLabel: null, hasClassLabel: false, hasCamera: true,  maxSpeed: 82 },
+        { name: 'DJI Avata 2',           weight: 377, classLabel: 'C1', hasClassLabel: true,  hasCamera: true,  maxSpeed: 54 },
+        { name: 'DJI FPV',               weight: 795, classLabel: null, hasClassLabel: false, hasCamera: true,  maxSpeed: 140},
+        { name: 'Autel EVO Nano+',       weight: 249, classLabel: 'C0', hasClassLabel: true,  hasCamera: true,  maxSpeed: 54 },
+        { name: 'Autel EVO Lite+',       weight: 835, classLabel: 'C1', hasClassLabel: true,  hasCamera: true,  maxSpeed: 61 },
+        { name: 'Autel EVO II Pro V3',   weight: 1193,classLabel: 'C2', hasClassLabel: true,  hasCamera: true,  maxSpeed: 72 },
+        { name: 'Autel EVO Max 4T',      weight: 1164,classLabel: 'C2', hasClassLabel: true,  hasCamera: true,  maxSpeed: 75 },
+        { name: 'Parrot ANAFI Ai',       weight: 898, classLabel: 'C1', hasClassLabel: true,  hasCamera: true,  maxSpeed: 55 },
+        { name: 'Parrot ANAFI USA',      weight: 500, classLabel: null, hasClassLabel: false, hasCamera: true,  maxSpeed: 55 },
+    ];
+
+    // ===========================
+    // REGULATORY ENGINE
+    // ===========================
+    function classifyDrone(drone) {
+        const w = drone.weight;
+        const hasLabel = drone.hasClassLabel;
+        const cl = drone.classLabel;
+        const hasCam = drone.hasCamera;
+
+        let result = {
+            subcategory: '',
+            certificate: '',
+            certificateDetail: '',
+            registration: true,
+            registrationNote: 'Registracija operaterja: 40 €, veljavnost 30 mesecev',
+            flyOverPeople: '',
+            distanceFromPeople: '',
+            distanceFromBuiltUp: '',
+            maxHeight: '120 m AGL (nad tlemi)',
+            vlos: 'Obvezen vizualni kontakt (VLOS)',
+            daylight: 'Priporočen dnevni let (ponoči z ustrezno osvetlitvijo)',
+            classLabel: cl,
+            isLegacy: !hasLabel
+        };
+
+        if (hasLabel && cl) {
+            switch (cl) {
+                case 'C0':
+                    result.subcategory = 'A1 (odprta kategorija)';
+                    result.certificate = 'Ni potreben';
+                    result.certificateDetail = 'Za drone C0 pod 250 g ni potreben izpit.';
+                    result.flyOverPeople = 'Da — dovoljen prelet nad nezainteresiranimi osebami';
+                    result.distanceFromPeople = 'Ni omejitve';
+                    result.distanceFromBuiltUp = 'Ni omejitve';
+                    result.registration = hasCam;
+                    if (!hasCam) {
+                        result.registrationNote = 'Registracija ni potrebna (pod 250 g, brez kamere)';
+                    }
+                    break;
+                case 'C1':
+                    result.subcategory = 'A1 (odprta kategorija)';
+                    result.certificate = 'A1/A3 spletni izpit';
+                    result.certificateDetail = 'Potreben je spletni izpit za podkategorijo A1/A3 pri CAA.';
+                    result.flyOverPeople = 'Da, vendar brez namerne letenja nad skupinami ljudi';
+                    result.distanceFromPeople = 'Izogibajte se nepotrebnim preletom nad osebami';
+                    result.distanceFromBuiltUp = 'Ni omejitve';
+                    break;
+                case 'C2':
+                    result.subcategory = 'A2 (odprta kategorija)';
+                    result.certificate = 'A2 certifikat + A1/A3 izpit';
+                    result.certificateDetail = 'Potreben je A1/A3 spletni izpit ter dodatni A2 izpit (praktično & teoretično).';
+                    result.flyOverPeople = 'Ne — prepovedan prelet nad ljudmi';
+                    result.distanceFromPeople = '30 m od ljudi (5 m v počasnem načinu)';
+                    result.distanceFromBuiltUp = 'Ni omejitve, vendar 30 m od ljudi';
+                    break;
+                case 'C3':
+                    result.subcategory = 'A3 (odprta kategorija)';
+                    result.certificate = 'A1/A3 spletni izpit';
+                    result.certificateDetail = 'Potreben je spletni izpit za podkategorijo A1/A3 pri CAA.';
+                    result.flyOverPeople = 'Ne — letenje daleč od ljudi';
+                    result.distanceFromPeople = '150 m od stanovanjskih, poslovnih, industrijskih in rekreacijskih območij';
+                    result.distanceFromBuiltUp = '150 m od pozidanega območja';
+                    break;
+                case 'C4':
+                    result.subcategory = 'A3 (odprta kategorija)';
+                    result.certificate = 'A1/A3 spletni izpit';
+                    result.certificateDetail = 'Potreben je spletni izpit za podkategorijo A1/A3 pri CAA.';
+                    result.flyOverPeople = 'Ne — letenje daleč od ljudi';
+                    result.distanceFromPeople = '150 m od stanovanjskih, poslovnih, industrijskih in rekreacijskih območij';
+                    result.distanceFromBuiltUp = '150 m od pozidanega območja';
+                    break;
+            }
+        } else {
+            // Legacy drone (brez EU razredne oznake)
+            if (w < 250) {
+                result.subcategory = 'A1 (odprta kategorija) — legacy';
+                result.certificate = 'Ni potreben';
+                result.certificateDetail = 'Legacy dron pod 250 g — izpit ni potreben, a funkcionalnost je omejena.';
+                result.flyOverPeople = 'Da (omejeno) — priporočeno se izogibati skupinam';
+                result.distanceFromPeople = 'Priporočeno: izogibajte se preletom';
+                result.distanceFromBuiltUp = 'Ni formalne omejitve';
+                result.registration = hasCam;
+                result.classLabel = 'Legacy <250g';
+                if (!hasCam) {
+                    result.registrationNote = 'Registracija ni potrebna (pod 250 g, brez kamere)';
+                }
+            } else {
+                result.subcategory = 'A3 (odprta kategorija) — legacy';
+                result.certificate = 'A1/A3 spletni izpit';
+                result.certificateDetail = 'Legacy dron nad 250 g — potreben A1/A3 izpit; letenje le v podkategoriji A3.';
+                result.flyOverPeople = 'Ne — letenje daleč od ljudi';
+                result.distanceFromPeople = '150 m od stanovanjskih, poslovnih, industrijskih in rekreacijskih območij';
+                result.distanceFromBuiltUp = '150 m od pozidanega območja';
+                result.classLabel = 'Legacy ≥250g';
+            }
+        }
+
+        return result;
+    }
+
+    // ===========================
+    // ZONE DEFINITIONS
+    // ===========================
+    const ARCGIS_BASE = 'https://services6.arcgis.com/1F2lR3M9nMUYDj5l/arcgis/rest/services/';
+
+    const ZONE_LAYERS = [
+        {
+            id: 'nuclear', name: 'Jedrska elektrarna (Krško)',
+            service: 'UAS_GEO_ZONES/FeatureServer/0', severity: 'PREPOVEDANO', color: '#c62828',
+            contact: 'CAA — Javna agencija za civilno letalstvo RS',
+            contactPhone: '+386 1 244 66 00',
+            contactWeb: 'https://www.caa.si',
+            contactEmail: 'info.caa@gov.si',
+            note: 'Letenje brez izrecnega dovoljenja CAA je prepovedano.'
+        },
+        {
+            id: 'triglav', name: 'Triglavski narodni park',
+            service: 'UAS_GEO_ZONES/FeatureServer/12', severity: 'PREPOVEDANO', color: '#c62828',
+            contact: 'Javni zavod Triglavski narodni park',
+            contactPhone: '+386 4 578 02 00',
+            contactWeb: 'https://www.tnp.si',
+            contactEmail: 'triglavski-narodni-park@tnp.gov.si',
+            note: 'Za snemanje z dronom v TNP je potrebno dovoljenje uprave parka.'
+        },
+        {
+            id: 'military', name: 'Omejeni prostor (vojaški)',
+            service: 'UAS_GEO_ZONES/FeatureServer/11', severity: 'OMEJENO', color: '#e65100',
+            contact: 'Ministrstvo za obrambo RS (MORS)',
+            contactPhone: '+386 1 471 22 11',
+            contactWeb: 'https://www.gov.si/drzavni-organi/ministrstva/ministrstvo-za-obrambo/',
+            contactEmail: '',
+            note: 'Vojaško območje — dovoljenje izdaja MORS.'
+        },
+        {
+            id: 'danger', name: 'Nevarni prostor',
+            service: 'UAS_GEO_ZONES/FeatureServer/10', severity: 'OMEJENO', color: '#e65100',
+            contact: 'CAA — Javna agencija za civilno letalstvo RS',
+            contactPhone: '+386 1 244 66 00',
+            contactWeb: 'https://www.caa.si',
+            contactEmail: 'info.caa@gov.si',
+            note: 'Nevarno območje — pred letom pridobite informacije pri CAA.'
+        },
+        {
+            id: 'ctr', name: 'CTR cona letališča',
+            service: 'CTR_WGS_24/FeatureServer/0', severity: 'OMEJENO', color: '#e65100',
+            contact: 'Kontrola zračnega prometa Slovenije (Slovenia Control)',
+            contactPhone: '+386 4 204 10 00',
+            contactWeb: 'https://www.sloveniacontrol.si',
+            contactEmail: 'info@sloveniacontrol.si',
+            note: 'Kontrolirani zračni prostor — obvezna koordinacija s Slovenia Control.'
+        },
+        {
+            id: 'vfr', name: 'VFR letališče',
+            service: 'letalisca_VFR_jan2023/FeatureServer/0', severity: 'OMEJENO', color: '#ef6c00',
+            contact: 'Upravljavec letališča (preverite na CAA)',
+            contactPhone: '',
+            contactWeb: 'https://www.caa.si',
+            contactEmail: '',
+            note: 'Območje VFR letališča — kontaktirajte upravljavca letališča.'
+        },
+        {
+            id: 'ifr', name: 'IFR letališče',
+            service: 'letalisca_IFR_jan23/FeatureServer/0', severity: 'OMEJENO', color: '#ef6c00',
+            contact: 'Kontrola zračnega prometa Slovenije / Fraport Slovenija',
+            contactPhone: '+386 4 206 10 00',
+            contactWeb: 'https://www.fraport-slovenija.si',
+            contactEmail: 'info@fraport-slovenija.si',
+            note: 'Območje IFR letališča — koordinacija s kontrolo letenja je obvezna.'
+        },
+        {
+            id: 'airfield', name: 'Vzletišče',
+            service: 'airfields_WGS_jan23/FeatureServer/0', severity: 'OMEJENO', color: '#ef6c00',
+            contact: 'Upravljavec vzletišča (preverite na CAA)',
+            contactPhone: '',
+            contactWeb: 'https://www.caa.si',
+            contactEmail: '',
+            note: 'Območje vzletišča — kontaktirajte lokalnega upravljavca.'
+        },
+        {
+            id: 'heliport', name: 'Heliport',
+            service: 'Heliports_May_24/FeatureServer/0', severity: 'OMEJENO', color: '#ef6c00',
+            contact: 'Upravljavec heliporta (preverite na CAA)',
+            contactPhone: '',
+            contactWeb: 'https://www.caa.si',
+            contactEmail: '',
+            note: 'Območje heliporta — kontaktirajte upravljavca.'
+        },
+        {
+            id: 'tes', name: 'TES termoelektrarna',
+            service: 'UAS_GEO_ZONES/FeatureServer/8', severity: 'OMEJENO', color: '#ef6c00',
+            contact: 'Termoelektrarna Šoštanj (TEŠ)',
+            contactPhone: '+386 3 899 30 00',
+            contactWeb: 'https://www.te-sostanj.si',
+            contactEmail: 'info@te-sostanj.si',
+            note: 'Območje termoelektrarne — dovoljenje pri upravljavcu TEŠ.'
+        },
+        {
+            id: 'coal', name: 'Premogovnik Velenje',
+            service: 'UAS_GEO_ZONES/FeatureServer/7', severity: 'OMEJENO', color: '#ef6c00',
+            contact: 'Premogovnik Velenje d.o.o.',
+            contactPhone: '+386 3 899 61 00',
+            contactWeb: 'https://www.rlv.si',
+            contactEmail: 'info@rlv.si',
+            note: 'Območje premogovnika — dovoljenje pri upravljavcu.'
+        },
+        {
+            id: 'port', name: 'Luka Koper',
+            service: 'Luka_Koper_25/FeatureServer/0', severity: 'OMEJENO', color: '#ef6c00',
+            contact: 'Luka Koper, d.d.',
+            contactPhone: '+386 5 665 61 00',
+            contactWeb: 'https://www.luka-kp.si',
+            contactEmail: 'portkoper@luka-kp.si',
+            note: 'Pristaniško območje — dovoljenje pri Luki Koper.'
+        },
+        {
+            id: 'builtup', name: 'Pozidano območje',
+            service: 'Pozidano_built_May24/FeatureServer/0', severity: 'OPOZORILO', color: '#f9a825',
+            contact: '',
+            contactPhone: '',
+            contactWeb: '',
+            contactEmail: '',
+            note: 'Pozidano območje — za drone A3/legacy obvezna razdalja 150 m.'
+        },
+        {
+            id: 'powerline', name: 'ELES daljnovod',
+            service: 'ELES_2023/FeatureServer/0', severity: 'OPOZORILO', color: '#f9a825',
+            contact: 'ELES, d.o.o.',
+            contactPhone: '+386 1 474 20 00',
+            contactWeb: 'https://www.eles.si',
+            contactEmail: 'info@eles.si',
+            note: 'Visokonapetostni daljnovod — vzdržujte varnostno razdaljo.'
+        },
+    ];
+
+    const NATURA_QUERY_URL = 'https://bio.discomap.eea.europa.eu/arcgis/rest/services/ProtectedSites/Natura2000Sites/MapServer/2/query';
+
+    // ===========================
+    // GLOBALS
+    // ===========================
+    let map, marker, borderLayer, zonePolygons = [];
+    let selectedDrone = null;
+    let selectedLocation = null;
+
+    // ===========================
+    // INIT MAP
+    // ===========================
+    function initMap() {
+        map = L.map('map', {
+            center: [46.12, 14.82],
+            zoom: 9,
+            zoomControl: true
+        });
+
+        // Base layers
+        const osmLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+            maxZoom: 19
+        });
+
+        const satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+            attribution: '&copy; Esri, Maxar, Earthstar Geographics',
+            maxZoom: 19
+        });
+
+        const topoLayer = L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://opentopomap.org">OpenTopoMap</a>',
+            maxZoom: 17
+        });
+
+        const cartoLight = L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+            attribution: '&copy; <a href="https://carto.com/">CARTO</a>',
+            maxZoom: 20
+        });
+
+        // Default layer
+        osmLayer.addTo(map);
+
+        // Layer control
+        const baseLayers = {
+            'OpenStreetMap': osmLayer,
+            'Satelitski posnetek': satelliteLayer,
+            'Topografska karta': topoLayer,
+            'Carto Light': cartoLight
+        };
+        L.control.layers(baseLayers, null, { position: 'topright' }).addTo(map);
+
+        // Scale bar
+        L.control.scale({ metric: true, imperial: false, position: 'bottomleft' }).addTo(map);
+
+        // Load Slovenia border
+        loadBorder();
+
+        // North indicator
+        const northCtrl = L.control({ position: 'topright' });
+        northCtrl.onAdd = function() {
+            const div = L.DomUtil.create('div', 'north-indicator');
+            div.innerHTML = '<span class="north-arrow">&#9650;</span><span class="north-letter">S</span>';
+            return div;
+        };
+        northCtrl.addTo(map);
+
+        // Map click handler
+        map.on('click', function(e) {
+            setLocation(e.latlng.lat, e.latlng.lng);
+        });
+    }
+
+    function loadBorder() {
+        fetch('https://raw.githubusercontent.com/johan/world.geo.json/master/countries/SVN.geo.json')
+            .then(r => r.json())
+            .then(data => {
+                borderLayer = L.geoJSON(data, {
+                    style: { color: '#333', weight: 3, fillOpacity: 0, opacity: 0.6 },
+                    interactive: false
+                }).addTo(map);
+            })
+            .catch(() => {
+                fetch('https://gist.githubusercontent.com/kamenjan/5b0009a5273b3f6f178119e4d8754308/raw/gistfile1.txt')
+                    .then(r => r.json())
+                    .then(data => {
+                        borderLayer = L.geoJSON(data, {
+                            style: { color: '#333', weight: 3, fillOpacity: 0, opacity: 0.6 },
+                            interactive: false
+                        }).addTo(map);
+                    })
+                    .catch(() => {});
+            });
+    }
+
+    // ===========================
+    // DRONE SEARCH / SELECTION
+    // ===========================
+    const droneSearch = document.getElementById('drone-search');
+    const droneDropdown = document.getElementById('drone-dropdown');
+    const droneCard = document.getElementById('drone-card');
+    const manualEntry = document.getElementById('manual-entry');
+
+    droneSearch.addEventListener('input', function() {
+        const q = this.value.trim().toLowerCase();
+        if (q.length < 1) {
+            droneDropdown.style.display = 'none';
+            return;
+        }
+        const matches = DRONES.filter(d => d.name.toLowerCase().includes(q));
+        renderDropdown(matches);
+    });
+
+    droneSearch.addEventListener('focus', function() {
+        if (this.value.trim().length >= 1) {
+            const q = this.value.trim().toLowerCase();
+            renderDropdown(DRONES.filter(d => d.name.toLowerCase().includes(q)));
+        }
+    });
+
+    document.addEventListener('click', function(e) {
+        if (!droneSearch.contains(e.target) && !droneDropdown.contains(e.target)) {
+            droneDropdown.style.display = 'none';
+        }
+    });
+
+    function renderDropdown(matches) {
+        let html = '';
+        matches.forEach(d => {
+            const badge = d.hasClassLabel ? d.classLabel : 'Legacy';
+            html += `<div class="dd-item" data-name="${d.name}">
+                <span>${d.name}</span>
+                <span class="dd-weight">${d.weight} g · ${badge}</span>
+            </div>`;
+        });
+        html += `<div class="dd-manual">+ Ročni vnos (dron ni na seznamu)</div>`;
+        droneDropdown.innerHTML = html;
+        droneDropdown.style.display = 'block';
+
+        droneDropdown.querySelectorAll('.dd-item').forEach(item => {
+            item.addEventListener('click', function() {
+                const name = this.dataset.name;
+                const drone = DRONES.find(d => d.name === name);
+                selectDrone(drone);
+            });
+        });
+
+        droneDropdown.querySelector('.dd-manual').addEventListener('click', function() {
+            droneDropdown.style.display = 'none';
+            droneSearch.value = '';
+            droneCard.classList.remove('visible');
+            manualEntry.classList.add('visible');
+            selectedDrone = null;
+        });
+    }
+
+    function selectDrone(drone) {
+        selectedDrone = drone;
+        droneSearch.value = drone.name;
+        droneDropdown.style.display = 'none';
+        manualEntry.classList.remove('visible');
+
+        const classInfo = drone.hasClassLabel ? drone.classLabel : 'Brez EU oznake (Legacy)';
+        const classCss = drone.hasClassLabel ? drone.classLabel.toLowerCase() : 'legacy';
+
+        droneCard.innerHTML = `
+            <h3>${drone.name}</h3>
+            <div class="specs">
+                <span class="spec-label">Teža:</span>
+                <span class="spec-value">${drone.weight} g</span>
+                <span class="spec-label">EU razred:</span>
+                <span class="spec-value"><span class="class-badge ${classCss}">${classInfo}</span></span>
+                <span class="spec-label">Kamera:</span>
+                <span class="spec-value">${drone.hasCamera ? 'Da' : 'Ne'}</span>
+                <span class="spec-label">Max hitrost:</span>
+                <span class="spec-value">${drone.maxSpeed} km/h</span>
+            </div>
+        `;
+        droneCard.classList.add('visible');
+        tryShowResults();
+    }
+
+    // Manual entry
+    document.getElementById('manual-class').addEventListener('change', function() {
+        document.getElementById('manual-class-select').style.display = this.checked ? 'block' : 'none';
+    });
+
+    document.getElementById('manual-confirm').addEventListener('click', function() {
+        const weight = parseInt(document.getElementById('manual-weight').value);
+        if (!weight || weight < 1 || weight > 25000) {
+            showNotification('Vnesite veljavno težo (1–25000 g)', true);
+            return;
+        }
+        const hasLabel = document.getElementById('manual-class').checked;
+        const cl = hasLabel ? document.getElementById('manual-class-value').value : null;
+        const hasCam = document.getElementById('manual-camera').checked;
+
+        selectedDrone = {
+            name: 'Ročni vnos',
+            weight: weight,
+            classLabel: cl,
+            hasClassLabel: hasLabel,
+            hasCamera: hasCam,
+            maxSpeed: null
+        };
+
+        const classInfo = hasLabel ? cl : 'Brez EU oznake (Legacy)';
+        const classCss = hasLabel ? cl.toLowerCase() : 'legacy';
+
+        droneCard.innerHTML = `
+            <h3>Ročni vnos</h3>
+            <div class="specs">
+                <span class="spec-label">Teža:</span>
+                <span class="spec-value">${weight} g</span>
+                <span class="spec-label">EU razred:</span>
+                <span class="spec-value"><span class="class-badge ${classCss}">${classInfo}</span></span>
+                <span class="spec-label">Kamera:</span>
+                <span class="spec-value">${hasCam ? 'Da' : 'Ne'}</span>
+            </div>
+        `;
+        droneCard.classList.add('visible');
+        manualEntry.classList.remove('visible');
+        tryShowResults();
+    });
+
+    // ===========================
+    // LOCATION SELECTION
+    // ===========================
+    function setLocation(lat, lng) {
+        lat = parseFloat(lat.toFixed(6));
+        lng = parseFloat(lng.toFixed(6));
+
+        selectedLocation = { lat, lng };
+
+        // Place marker
+        if (marker) map.removeLayer(marker);
+        marker = L.marker([lat, lng]).addTo(map);
+        map.setView([lat, lng], Math.max(map.getZoom(), 12));
+
+        // Reverse geocode
+        const locStatus = document.getElementById('loc-status');
+        const locName = document.getElementById('loc-name');
+        const locCoords = document.getElementById('loc-coords');
+
+        locName.textContent = 'Iščem naslov...';
+        locCoords.textContent = `${lat}, ${lng}`;
+        locStatus.classList.add('visible');
+
+        fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=16&addressdetails=1&accept-language=sl`, {
+            headers: { 'User-Agent': 'PredletnaPriprava/1.0' }
+        })
+            .then(r => r.json())
+            .then(data => {
+                if (data.display_name) {
+                    locName.textContent = data.display_name.split(',').slice(0, 3).join(', ');
+                } else {
+                    locName.textContent = 'Neznana lokacija';
+                }
+            })
+            .catch(() => {
+                locName.textContent = 'Napaka pri iskanju naslova';
+            });
+
+        tryShowResults();
+    }
+
+    // Address search
+    let addrDebounce = null;
+    document.getElementById('addr-btn').addEventListener('click', searchAddress);
+    document.getElementById('addr-input').addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') searchAddress();
+    });
+
+    function searchAddress() {
+        const q = document.getElementById('addr-input').value.trim();
+        if (q.length < 2) return;
+
+        fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&countrycodes=si&limit=5&accept-language=sl`, {
+            headers: { 'User-Agent': 'PredletnaPriprava/1.0' }
+        })
+            .then(r => r.json())
+            .then(results => {
+                const container = document.getElementById('addr-results');
+                if (results.length === 0) {
+                    container.innerHTML = '<div class="addr-item" style="color:#999;">Ni rezultatov</div>';
+                    container.classList.add('visible');
+                    return;
+                }
+                container.innerHTML = results.map(r =>
+                    `<div class="addr-item" data-lat="${r.lat}" data-lng="${r.lon}">${r.display_name}</div>`
+                ).join('');
+                container.classList.add('visible');
+
+                container.querySelectorAll('.addr-item').forEach(item => {
+                    item.addEventListener('click', function() {
+                        const lat = parseFloat(this.dataset.lat);
+                        const lng = parseFloat(this.dataset.lng);
+                        container.classList.remove('visible');
+                        document.getElementById('addr-input').value = this.textContent.split(',').slice(0, 2).join(', ');
+                        setLocation(lat, lng);
+                    });
+                });
+            })
+            .catch(() => showNotification('Napaka pri iskanju naslova', true));
+    }
+
+    // Manual coordinates
+    document.getElementById('coord-btn').addEventListener('click', function() {
+        const lat = parseFloat(document.getElementById('coord-lat').value);
+        const lng = parseFloat(document.getElementById('coord-lng').value);
+        if (isNaN(lat) || isNaN(lng) || lat < 45.4 || lat > 46.9 || lng < 13.3 || lng > 16.6) {
+            showNotification('Vnesite veljavne koordinate znotraj Slovenije', true);
+            return;
+        }
+        setLocation(lat, lng);
+    });
+
+    // ===========================
+    // RESULTS
+    // ===========================
+    function tryShowResults() {
+        if (!selectedDrone || !selectedLocation) return;
+
+        const section = document.getElementById('results-section');
+        section.classList.add('visible');
+
+        const reg = classifyDrone(selectedDrone);
+        queryZonesAndRender(reg);
+    }
+
+    async function queryZonesAndRender(reg) {
+        const container = document.getElementById('results-container');
+        const loading = document.getElementById('loading-zones');
+
+        container.innerHTML = '';
+        loading.classList.add('visible');
+
+        // Clear previous zone polygons
+        zonePolygons.forEach(p => map.removeLayer(p));
+        zonePolygons = [];
+
+        // Render certification results immediately
+        container.innerHTML = renderCertResults(reg) + renderOpsResults(reg);
+
+        // Query zones in parallel
+        const { lat, lng } = selectedLocation;
+        let zoneResults = [];
+
+        try {
+            const promises = ZONE_LAYERS.map(layer => queryZone(layer, lat, lng));
+            promises.push(queryNatura2000(lat, lng));
+            const results = await Promise.all(promises);
+            zoneResults = results.filter(r => r.hit);
+        } catch (err) {
+            console.error('Zone query error:', err);
+        }
+
+        loading.classList.remove('visible');
+
+        // Render zone results
+        if (zoneResults.length === 0) {
+            container.innerHTML += `
+                <div class="result-card zone-ok">
+                    <h4><span class="tag tag-green">PROSTO</span> Ni posebnih omejitev</h4>
+                    <p>Na tej lokaciji ni zaznanih geografskih con ali prepovedi.
+                       Upoštevajte splošne predpise za odprto kategorijo (max 120 m, VLOS, itd.).</p>
+                </div>
+            `;
+            // Green popup on marker
+            if (marker) {
+                marker.bindPopup('<div class="zone-popup"><span class="zp-severity" style="background:#43a047;">PROSTO</span><div class="zp-title">Ni posebnih omejitev</div><div style="font-size:0.78rem;">Upoštevajte splošne predpise (max 120 m, VLOS).</div></div>', { maxWidth: 300 }).openPopup();
+            }
+        } else {
+            // Sort: PREPOVEDANO first, then OMEJENO, then OPOZORILO
+            const order = { 'PREPOVEDANO': 0, 'OMEJENO': 1, 'OPOZORILO': 2, 'INFO': 3 };
+            zoneResults.sort((a, b) => (order[a.severity] || 9) - (order[b.severity] || 9));
+
+            zoneResults.forEach(z => {
+                container.innerHTML += renderZoneCard(z);
+            });
+
+            // Build and show automatic popup on marker with all warnings
+            if (marker) {
+                const alertZones = zoneResults.filter(z => z.severity === 'PREPOVEDANO' || z.severity === 'OMEJENO');
+                const warnZones = zoneResults.filter(z => z.severity === 'OPOZORILO' || z.severity === 'INFO');
+
+                let popupParts = [];
+
+                alertZones.forEach(z => {
+                    const sevColor = z.severity === 'PREPOVEDANO' ? '#c62828' : '#e65100';
+                    let html = `<div style="margin-bottom:8px; padding-bottom:8px; border-bottom:1px solid #ddd;">`;
+                    html += `<span class="zp-severity" style="background:${sevColor};">${z.severity}</span> `;
+                    html += `<strong>${z.layerName}</strong>`;
+                    if (z.featureName) html += `<br><span style="font-size:0.78rem;">${z.featureName}</span>`;
+                    if (z.contact) {
+                        html += `<div class="zp-contact"><strong>Dovoljenje:</strong> ${z.contact}`;
+                        if (z.contactPhone) html += `<br>Tel: ${z.contactPhone}`;
+                        if (z.contactEmail) html += `<br><a href="mailto:${z.contactEmail}">${z.contactEmail}</a>`;
+                        if (z.contactWeb) html += `<br><a href="${z.contactWeb}" target="_blank">${z.contactWeb}</a>`;
+                        html += `</div>`;
+                    }
+                    html += `</div>`;
+                    popupParts.push(html);
+                });
+
+                warnZones.forEach(z => {
+                    const sevColor = z.severity === 'OPOZORILO' ? '#f9a825' : '#2e7d32';
+                    const textColor = z.severity === 'OPOZORILO' ? 'color:#333;' : '';
+                    popupParts.push(`<div style="margin-bottom:4px;"><span class="zp-severity" style="background:${sevColor};${textColor}">${z.severity}</span> <strong>${z.layerName}</strong></div>`);
+                });
+
+                if (popupParts.length > 0) {
+                    const fullPopup = `<div class="zone-popup">${popupParts.join('')}</div>`;
+                    marker.bindPopup(fullPopup, { maxWidth: 320 }).openPopup();
+                }
+            }
+        }
+    }
+
+    async function queryZone(layer, lat, lng) {
+        const url = `${ARCGIS_BASE}${layer.service}/query?` +
+            `geometry=${lng},${lat}&geometryType=esriGeometryPoint` +
+            `&inSR=4326&spatialRel=esriSpatialRelIntersects` +
+            `&outFields=*&returnGeometry=true&outSR=4326&f=json`;
+
+        try {
+            const resp = await fetch(url);
+            const data = await resp.json();
+
+            if (data.features && data.features.length > 0) {
+                // Extract info from first feature
+                const attrs = data.features[0].attributes || {};
+                const featureName = attrs.OBMOCJE || attrs.Name || attrs.NAME || attrs.name ||
+                                    attrs.DESIGNATIO || attrs.Designation ||
+                                    attrs.Ime || attrs.IME || attrs.Subject || '';
+
+                // Extract restriction/contact info from attributes if available
+                const attrRestriction = attrs.OMEJITEV || attrs.UAS_restriction2 || '';
+                const attrContact = attrs.Kontakt_Co || attrs.Contact || '';
+                const attrExceptions = attrs.IZJEME_OPN || attrs.IZJEME_SPC || '';
+
+                // Use attribute contact if available, otherwise fallback to hardcoded
+                const effectiveEmail = attrContact || layer.contactEmail;
+
+                // Build popup for zone polygons
+                const sevClass = layer.severity === 'PREPOVEDANO' ? 'sev-red' : layer.severity === 'OMEJENO' ? 'sev-orange' : 'sev-yellow';
+                let contactHtml = '';
+                if (layer.contact) {
+                    contactHtml = `<div class="zp-contact"><strong>Dovoljenje:</strong> ${layer.contact}`;
+                    if (layer.contactPhone) contactHtml += `<br>Tel: ${layer.contactPhone}`;
+                    if (effectiveEmail) contactHtml += `<br>E-pošta: <a href="mailto:${effectiveEmail}">${effectiveEmail}</a>`;
+                    if (layer.contactWeb) contactHtml += `<br><a href="${layer.contactWeb}" target="_blank">${layer.contactWeb}</a>`;
+                    contactHtml += '</div>';
+                }
+                let restrictionLine = '';
+                if (attrRestriction) {
+                    restrictionLine = `<div style="margin-top:3px; font-size:0.78rem;"><strong>Omejitev:</strong> ${attrRestriction}</div>`;
+                }
+                const popupHtml = `<div class="zone-popup">
+                    <span class="zp-severity ${sevClass}">${layer.severity}</span>
+                    <div class="zp-title">${layer.name}</div>
+                    ${featureName ? '<div>' + featureName + '</div>' : ''}
+                    ${restrictionLine}
+                    <div style="margin-top:3px; font-size:0.78rem;">${layer.note || ''}</div>
+                    ${contactHtml}
+                </div>`;
+
+                // Draw polygons on map
+                data.features.forEach(f => {
+                    if (f.geometry && f.geometry.rings) {
+                        const coords = f.geometry.rings.map(ring =>
+                            ring.map(pt => [pt[1], pt[0]])
+                        );
+                        const poly = L.polygon(coords, {
+                            color: layer.color,
+                            weight: 2,
+                            fillColor: layer.color,
+                            fillOpacity: 0.25,
+                            interactive: true
+                        }).addTo(map);
+                        if (popupHtml) {
+                            poly.bindPopup(popupHtml, { maxWidth: 280 });
+                        }
+                        zonePolygons.push(poly);
+                    }
+                });
+
+                return {
+                    hit: true,
+                    layerId: layer.id,
+                    layerName: layer.name,
+                    severity: layer.severity,
+                    color: layer.color,
+                    featureName: featureName,
+                    attributes: attrs,
+                    contact: layer.contact,
+                    contactPhone: layer.contactPhone,
+                    contactWeb: layer.contactWeb,
+                    contactEmail: effectiveEmail,
+                    note: layer.note,
+                    restriction: attrRestriction,
+                    exceptions: attrExceptions
+                };
+            }
+        } catch (err) {
+            console.warn(`Zone query failed for ${layer.id}:`, err);
+        }
+
+        return { hit: false, layerId: layer.id };
+    }
+
+    async function queryNatura2000(lat, lng) {
+        try {
+            const url = `${NATURA_QUERY_URL}?` +
+                `geometry=${lng},${lat}&geometryType=esriGeometryPoint` +
+                `&inSR=4326&spatialRel=esriSpatialRelIntersects` +
+                `&where=MS='SI'&outFields=SITECODE,SITENAME&returnGeometry=false&f=json`;
+            const resp = await fetch(url);
+            const data = await resp.json();
+            if (data.features && data.features.length > 0) {
+                const attrs = data.features[0].attributes || {};
+                const siteName = attrs.SITENAME || attrs.SITECODE || 'Natura 2000';
+                return {
+                    hit: true,
+                    layerId: 'natura2000',
+                    layerName: 'Natura 2000 območje',
+                    severity: 'INFO',
+                    color: '#2e7d32',
+                    featureName: siteName,
+                    attributes: attrs,
+                    contact: 'Zavod RS za varstvo narave',
+                    contactPhone: '+386 1 230 95 00',
+                    contactWeb: 'https://www.naravovarstveni-atlas.si',
+                    contactEmail: 'zrsvn.oe@gov.si',
+                    note: 'Natura 2000 — priporočeno preverjanje naravovarstvenih pogojev.'
+                };
+            }
+        } catch (err) {
+            console.warn('Natura 2000 query failed:', err);
+        }
+        return { hit: false, layerId: 'natura2000' };
+    }
+
+    function renderCertResults(reg) {
+        const regIcon = reg.registration ? 'Da' : 'Ne';
+        const classDisplay = reg.isLegacy
+            ? `<span class="class-badge legacy">${reg.classLabel}</span>`
+            : `<span class="class-badge ${reg.classLabel ? reg.classLabel.toLowerCase() : 'legacy'}">${reg.classLabel || '—'}</span>`;
+
+        return `
+            <div class="result-card cert">
+                <h4><span class="tag tag-blue">CERTIFIKATI</span> Zahteve za pilota</h4>
+                <ul>
+                    <li><strong>Podkategorija:</strong> ${reg.subcategory}</li>
+                    <li><strong>Zahtevan certifikat:</strong> ${reg.certificate}</li>
+                    <li>${reg.certificateDetail}</li>
+                    <li><strong>Registracija operaterja:</strong> ${regIcon} — ${reg.registrationNote}</li>
+                </ul>
+                <p style="margin-top:8px; font-size:0.78rem;">
+                    <a href="https://www.caa.si/droni" target="_blank" style="color:#1565c0;">Več info na CAA →</a>
+                </p>
+            </div>
+        `;
+    }
+
+    function renderOpsResults(reg) {
+        return `
+            <div class="result-card ops">
+                <h4>Operativne omejitve</h4>
+                <ul>
+                    <li><strong>Max višina:</strong> ${reg.maxHeight}</li>
+                    <li><strong>Let nad ljudmi:</strong> ${reg.flyOverPeople}</li>
+                    <li><strong>Razdalja od ljudi:</strong> ${reg.distanceFromPeople}</li>
+                    <li><strong>Pozidano območje:</strong> ${reg.distanceFromBuiltUp}</li>
+                    <li><strong>Vizualni kontakt:</strong> ${reg.vlos}</li>
+                    <li><strong>Čas letenja:</strong> ${reg.daylight}</li>
+                </ul>
+            </div>
+        `;
+    }
+
+    function renderZoneCard(zone) {
+        let cardClass = 'zone-caution';
+        let tagClass = 'tag-yellow';
+
+        if (zone.severity === 'PREPOVEDANO') {
+            cardClass = 'zone-danger';
+            tagClass = 'tag-red';
+        } else if (zone.severity === 'OMEJENO') {
+            cardClass = 'zone-warning';
+            tagClass = 'tag-orange';
+        } else if (zone.severity === 'INFO') {
+            cardClass = 'zone-info';
+            tagClass = 'tag-green';
+        }
+
+        let detail = '';
+        if (zone.severity === 'PREPOVEDANO') {
+            detail = 'Letenje z droni je na tej lokaciji <strong>prepovedano</strong>. Za izjeme je potrebno dovoljenje spodaj navedenega organa.';
+        } else if (zone.severity === 'OMEJENO') {
+            detail = 'Letenje je <strong>omejeno</strong>. Pred letom pridobite dovoljenje pri spodaj navedenem kontaktu.';
+        } else if (zone.severity === 'INFO') {
+            detail = 'Zavarovano območje Natura 2000. Letenje ni nujno prepovedano, a upoštevajte <strong>naravovarstvene predpise</strong> in se izogibajte motenju živali.';
+        } else {
+            detail = 'Bodite pozorni na morebitne ovire in upoštevajte varnostno razdaljo.';
+        }
+
+        const featureInfo = zone.featureName ? `<li><strong>Oznaka:</strong> ${zone.featureName}</li>` : '';
+
+        // Build contact block
+        let contactHtml = '';
+        if (zone.contact) {
+            contactHtml = `<li style="margin-top:6px; padding-top:6px; border-top:1px solid rgba(0,0,0,0.1);"><strong>Dovoljenje pridobite pri:</strong> ${zone.contact}</li>`;
+            if (zone.contactPhone) contactHtml += `<li>Tel: <strong>${zone.contactPhone}</strong></li>`;
+            if (zone.contactEmail) contactHtml += `<li>E-pošta: <a href="mailto:${zone.contactEmail}" style="color:#1565c0;">${zone.contactEmail}</a></li>`;
+            if (zone.contactWeb) contactHtml += `<li>Splet: <a href="${zone.contactWeb}" target="_blank" style="color:#1565c0;">${zone.contactWeb}</a></li>`;
+        }
+
+        // Note from zone definition
+        const noteHtml = zone.note ? `<li style="font-style:italic; margin-top:4px;">${zone.note}</li>` : '';
+
+        // Actual restriction from ArcGIS attributes
+        const restrictionHtml = zone.restriction ? `<li><strong>Dejanska omejitev:</strong> ${zone.restriction}</li>` : '';
+        const exceptionsHtml = zone.exceptions ? `<li><strong>Izjeme:</strong> ${zone.exceptions}</li>` : '';
+
+        return `
+            <div class="result-card ${cardClass}">
+                <h4><span class="tag ${tagClass}">${zone.severity}</span> ${zone.layerName}</h4>
+                <ul>
+                    ${featureInfo}
+                    <li>${detail}</li>
+                    ${restrictionHtml}
+                    ${exceptionsHtml}
+                    ${noteHtml}
+                    ${contactHtml}
+                </ul>
+            </div>
+        `;
+    }
+
+    // ===========================
+    // NOTIFICATIONS
+    // ===========================
+    function showNotification(msg, isError) {
+        const el = document.getElementById('notification');
+        el.textContent = msg;
+        el.className = 'notification show' + (isError ? ' error' : '');
+        setTimeout(() => { el.className = 'notification'; }, 3500);
+    }
+
+    // ===========================
+    // SIDEBAR TOGGLE (mobile)
+    // ===========================
+    const sidebarEl = document.getElementById('sidebar');
+    const toggleBtn = document.getElementById('sidebar-toggle');
+
+    toggleBtn.addEventListener('click', function() {
+        sidebarEl.classList.toggle('collapsed');
+        this.textContent = sidebarEl.classList.contains('collapsed') ? '☰' : '✕';
+    });
+
+    function autoCollapseSidebar() {
+        if (window.innerWidth <= 768) {
+            sidebarEl.classList.add('collapsed');
+            toggleBtn.textContent = '☰';
+        }
+    }
+
+    // Patch selectDrone to auto-collapse on mobile
+    const _origSelectDrone = selectDrone;
+    selectDrone = function(drone) {
+        _origSelectDrone(drone);
+        autoCollapseSidebar();
+    };
+
+    // Patch setLocation to auto-collapse on mobile
+    const _origSetLocation = setLocation;
+    setLocation = function(lat, lng) {
+        _origSetLocation(lat, lng);
+        autoCollapseSidebar();
+    };
+
+    // ===========================
+    // INIT
+    // ===========================
+    initMap();
+
+    // ===========================
+    // SERVICE WORKER
+    // ===========================
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('./sw.js').then(reg => {
+            reg.addEventListener('updatefound', () => {
+                const newSW = reg.installing;
+                newSW.addEventListener('statechange', () => {
+                    if (newSW.state === 'activated') {
+                        showNotification('Nova verzija je na voljo — osvežite stran.', false);
+                    }
+                });
+            });
+        }).catch(err => console.warn('SW registration failed:', err));
+    }
+
+})();
+</script>
+</body>
+</html>

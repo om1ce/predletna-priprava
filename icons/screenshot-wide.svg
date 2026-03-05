@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720" width="1280" height="720">
+  <rect width="1280" height="720" fill="#f5f6fa"/>
+  <!-- Header -->
+  <rect width="1280" height="64" fill="#1a237e"/>
+  <text x="640" y="40" text-anchor="middle" fill="#fff" font-family="sans-serif" font-size="24" font-weight="bold" letter-spacing="3">PREDLETNA PRIPRAVA</text>
+  <!-- Sidebar -->
+  <rect x="0" y="64" width="380" height="656" fill="#f5f6fa"/>
+  <rect x="16" y="80" width="348" height="44" rx="8" fill="#fff" stroke="#ccc" stroke-width="2"/>
+  <text x="32" y="108" fill="#999" font-family="sans-serif" font-size="14">Vpiši model drona...</text>
+  <!-- Map area -->
+  <rect x="380" y="64" width="900" height="656" fill="#dde4d0"/>
+  <text x="830" y="400" text-anchor="middle" fill="#1a237e" font-family="sans-serif" font-size="28" opacity="0.5">Zemljevid Slovenije</text>
+</svg>

@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 390 844" width="390" height="844">
+  <rect width="390" height="844" fill="#f5f6fa"/>
+  <!-- Header -->
+  <rect width="390" height="56" fill="#1a237e"/>
+  <text x="195" y="36" text-anchor="middle" fill="#fff" font-family="sans-serif" font-size="16" font-weight="bold" letter-spacing="2">PREDLETNA PRIPRAVA</text>
+  <!-- Map area -->
+  <rect x="0" y="56" width="390" height="788" fill="#dde4d0"/>
+  <text x="195" y="450" text-anchor="middle" fill="#1a237e" font-family="sans-serif" font-size="20" opacity="0.5">Zemljevid</text>
+  <!-- Toggle button -->
+  <circle cx="40" cy="804" r="24" fill="#1a237e"/>
+  <text x="40" y="812" text-anchor="middle" fill="#fff" font-family="sans-serif" font-size="20">☰</text>
+</svg>

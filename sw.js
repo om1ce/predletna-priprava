@@ -1,4 +1,4 @@
-const CACHE_NAME = 'predletna-v1';
+const CACHE_NAME = 'predletna-v2';
 
 const APP_SHELL = [
   './dronski-pomocnik.html',
@@ -39,7 +39,8 @@ self.addEventListener('fetch', event => {
     url.hostname.includes('basemaps.cartocdn') ||
     url.hostname.includes('arcgisonline') ||
     url.hostname.includes('discomap.eea') ||
-    url.hostname.includes('githubusercontent')
+    url.hostname.includes('githubusercontent') ||
+    url.hostname.includes('open-meteo')
   ) {
     event.respondWith(fetch(event.request));
     return;
